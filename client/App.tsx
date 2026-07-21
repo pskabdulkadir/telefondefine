@@ -1342,22 +1342,25 @@ const PermissionsSetup: React.FC<PermissionsSetupProps> = ({ permissions, onComp
   const grantAllPermissions = async () => {
     setLoading(true);
     try {
-      // Donanım izinlerini merkezi fonksiyondan paralel olarak iste
+      // Donanım izinlerini merkezi fonksiyondan iste
       const sensorResult = await requestSensorPermission();
-
-      // Konum izni için kısa bir bekleme (Zaman aşımı 1.5sn)
-      const locationPromise = new Promise<void>((resolve) => {
-        const timer = setTimeout(resolve, 1500);
+      
+      // Konum iznini ayrıca iste
+      await new Promise<void>((resolve) => {
         navigator.geolocation.getCurrentPosition(
-          () => { clearTimeout(timer); resolve(); },
-          () => { clearTimeout(timer); resolve(); },
-          { timeout: 1500 }
+          () => {
+            console.log('✓ Konum izni alındı.');
+            resolve();
+          },
+          (err) => {
+            console.warn('Konum izni hatası:', err.message);
+            resolve(); // Hata olsa bile devam et
+          },
+          { enableHighAccuracy: true }
         );
       });
 
-      await locationPromise;
-
-      // UI bayraklarını toplu güncelle
+      // Tüm izinleri 'true' olarak ayarla ve devam et
       setTempPermissions(prev => ({
         ...prev,
         camera: true, microphone: true,
@@ -2199,6 +2202,7 @@ export default function App() {
   const [liveSurfaceAnalysis, setLiveSurfaceAnalysis] = useState<SurfaceAnalysis | null>(null);
   const liveFreq = useFrequencyAnalyzer(sensorsActive || activeTab === 'kamera' || scanPhase === 'scanning' || scanPhase === 'calibration' || activeTab === '3d-view' || activeTab === 'x-ray');
   const liveAnalysis = useSensorFusion(sensorData, liveFreq / 100, liveSurfaceAnalysis);
+  const liveAnalysis = useSensorFusion(rawSensorData ? sensorData : undefined, liveFreq / 100, liveSurfaceAnalysis);
 
   // Effect to handle %90+ AI confidence toast in SIMPLE mode
   useEffect(() => {
