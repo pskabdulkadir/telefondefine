@@ -30,14 +30,14 @@ export const TargetTrackerHUD: React.FC<TargetTrackerHUDProps> = ({
   }, [distance, locked, onTargetUpdate]);
 
   useEffect(() => {
-    // Simülasyon kaldırıldı. Kilitlenme durumu artık dışarıdan yönetilmeli.
-    // Örnek: setLocked(anomalyActive && anomalyScore > 40);
+    // Simülasyon tamamen kaldırıldı. Kilitlenme ve hedef verileri artık
+    // dışarıdan (prop'lar aracılığıyla) gerçek analiz sonuçlarına göre yönetilmelidir.
+    setLocked(anomalyActive && anomalyScore > 40);
   }, [anomalyActive, anomalyScore, compassHeading]);
 
   // Dynamically calculate distance reduction as the user points towards the locked angle
   // When heading matches targetAngle, simulate getting "closer"
   const angleDiff = Math.abs((compassHeading - targetAngle + 180) % 360 - 180);
-  
   return (
     <div className="bg-zinc-950/85 border border-zinc-900 hover:border-red-500/30 rounded-3xl p-6 backdrop-blur-xl space-y-4 transition-all duration-300 relative group">
       <div className="flex items-center justify-between">

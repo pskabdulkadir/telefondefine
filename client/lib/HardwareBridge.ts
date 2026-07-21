@@ -91,21 +91,11 @@ export class HardwareBridge {
    * beslenen event-driven akış.
    */
   private startHardwareFallbackStream() {
-    // Sahte veri üretimini durdur. Sadece boş bir başlangıç verisi gönder.
-    this.stopHardwareFallbackStream(); // Önceki interval'i temizle
-    console.warn('Donanım bağlı değil. Fallback modunda boş veri akışı başlatıldı.');
-    
-    // Sadece bir kez boş veri göndererek arayüzün çökmesini engelle
-    // ve sonrasında gerçek veri beklemeye başla.
-    setTimeout(() => {
-      const payload: LiveTelemetryPayload = {
-        gprRawSignal: new Float32Array(256),
-        magneticFlux: [0, 0, 0],
-        lidarPoints: [],
-        deviceAngles: { pitch: 0, roll: 0, yaw: 0 }
-      };
-      this.telemetry$.next(payload);
-    }, 100);
+    // SİMÜLASYON TAMAMEN KALDIRILDI.
+    // Bu fonksiyon artık hiçbir şey yapmıyor. Uygulama, `connectSerial()` veya
+    // `connectBluetooth()` ile gerçek bir donanım bağlanana kadar veri akışı başlatmayacak.
+    this.stopHardwareFallbackStream();
+    console.warn('Donanım bağlı değil. Gerçek donanım bağlantısı bekleniyor...');
   }
 
   private startRealSerialStream() {

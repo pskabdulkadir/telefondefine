@@ -35,8 +35,9 @@ export const CoSlamPanel: React.FC<CoSlamPanelProps> = ({
   const [loopClosureStatus, setLoopClosureStatus] = useState<'monitoring' | 'optimizing' | 'success'>('monitoring');
 
   useEffect(() => {
-    // Simülasyon kaldırıldı. dataPoints ve driftValue artık gerçek SLAM verisinden gelmeli.
-    // Örnek: setDriftValue(realSlamData.drift);
+    // Simülasyon tamamen kaldırıldı. `dataPoints` ve `driftValue` gibi durumlar
+    // artık gerçek SLAM (Simultaneous Localization and Mapping) algoritmasından
+    // gelen canlı verilerle güncellenmelidir.
   }, [syncedNodes]);
 
   const handleSyncNode = (id: string) => {
