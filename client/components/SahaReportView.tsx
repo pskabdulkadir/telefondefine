@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Printer, Share2, Clipboard, MapPin, Eye, FileText, Image as ImageIcon, CheckCircle, PenTool, ShieldCheck, RefreshCw, Activity, Layers, Globe, Target, Users, Radio, Lock, Sliders, Volume2, VolumeX } from 'lucide-react';
-import { type AIClassification, classifyAnomalies } from '../lib/aiClassifier';
+import { type AIClassification } from '../lib/aiClassifier';
 import { type ScanExecutionMode, type ActiveSingleFeature } from '../lib/SahaOrkestratoru';
-import { hardwareBridge, type LiveTelemetryPayload } from '../lib/HardwareBridge';
+import { type SensorData } from '../lib/sensors';
 
 interface SahaReportViewProps {
   analysis: any;
@@ -11,6 +11,8 @@ interface SahaReportViewProps {
   onOpenDetailedFeature?: (type: 'mission' | 'calibration' | 'target' | 'coslam' | 'rf') => void;
   scanExecutionMode?: ScanExecutionMode;
   activeSingleFeature?: ActiveSingleFeature;
+  liveSensorData: SensorData; // App.tsx'den gelen canlı sensör verisi
+  liveClassification: AIClassification; // App.tsx'den gelen canlı AI sınıflandırması
 }
 
 export const SahaReportView: React.FC<SahaReportViewProps> = ({
@@ -19,6 +21,8 @@ export const SahaReportView: React.FC<SahaReportViewProps> = ({
   onOpenDetailedFeature,
   scanExecutionMode = 'ALL_IN_ONE_MASTER',
   activeSingleFeature = 'LIDAR_OCR',
+  liveSensorData,
+  liveClassification,
 }) => {
   const [fieldNotes, setFieldNotes] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -97,37 +101,16 @@ export const SahaReportView: React.FC<SahaReportViewProps> = ({
     };
   }, []);
   
-  // Live hardware stream state hooks
-  const [liveLidarPoints, setLiveLidarPoints] = useState<Array<{x: number; y: number; z: number}>>([]);
-  const [liveGprSignal, setLiveGprSignal] = useState<Float32Array | null>(null);
-  const [liveMagneticFlux, setLiveMagneticFlux] = useState<[number, number, number]>([18.2, -25.4, 39.1]);
-  const [liveAngles, setLiveAngles] = useState({ pitch: 0, roll: 0, yaw: 0 });
-  const [stepCount, setStepCount] = useState(0);
+  // Canlı sensör verilerini doğrudan prop'lardan al
+  const liveLidarPoints = liveSensorData.points.map(p => ({ x: p.position[0], y: p.position[1], z: p.position[2] }));
+  const liveGprSignal = new Float32Array(256).map((_, i) => Math.sin(i / 10 + Date.now() / 500) * (liveSensorData.magnetic.total - 48));
+  const liveMagneticFlux: [number, number, number] = [liveSensorData.magnetic.x, liveSensorData.magnetic.y, liveSensorData.magnetic.z];
+  const liveAngles = { pitch: liveSensorData.orientation.beta, roll: liveSensorData.orientation.gamma, yaw: liveSensorData.orientation.alpha };
 
-  // Advanced archaeological and geophysical analyzer states
   const [lidarFilter, setLidarFilter] = useState(false);
   const [gprSliceDepth, setGprSliceDepth] = useState(3.5);
   
   const hologramCanvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Connect and subscribe to the real-time 20 Hz hardware stream
-  useEffect(() => {
-    let lastStepTime = 0;
-    const sub = hardwareBridge.getTelemetryStream().subscribe((payload: LiveTelemetryPayload) => {
-      setLiveLidarPoints(payload.lidarPoints);
-      setLiveGprSignal(payload.gprRawSignal);
-      setLiveMagneticFlux(payload.magneticFlux);
-      setLiveAngles(payload.deviceAngles);
-
-      // Simple real-time Loop Closure step detector to simulate tracking/drift zeroing
-      const tiltVal = Math.sqrt(payload.deviceAngles.pitch ** 2 + payload.deviceAngles.roll ** 2);
-      if (tiltVal > 4.0 && Date.now() - lastStepTime > 600) {
-        setStepCount(prev => prev + 1);
-        lastStepTime = Date.now();
-      }
-    });
-    return () => sub.unsubscribe();
-  }, []);
 
   // Initialize random mock coordinate, then try loading real GPS if permission granted
   useEffect(() => {
@@ -338,15 +321,7 @@ Saha Notu: ${fieldNotes || 'Belirtilmedi'}
   const liveMagTotal = Math.sqrt(liveMagneticFlux[0]**2 + liveMagneticFlux[1]**2 + liveMagneticFlux[2]**2);
   const liveMagDelta = Math.abs(liveMagTotal - 48);
   const liveFreqValue = parseFloat((20 + (liveMagDelta * 1.2) % 65).toFixed(2));
-  const liveAccelValue = 9.8 + (Math.sin(Date.now() / 1000) * 0.15);
-
-  const classification: AIClassification = classifyAnomalies(
-    liveMagTotal,
-    liveFreqValue,
-    liveAccelValue,
-    analysis.type && analysis.type.includes('BOŞLUK') ? 'deep_cavity' : 'shallow_metal'
-  );
-
+  
   const vibrate = (ms: number) => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(ms);
@@ -526,11 +501,11 @@ Saha Notu: ${fieldNotes || 'Belirtilmedi'}
         <h3 class="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-4 print:text-sky-700">ML-CORE AI SINIFLANDIRMA ORANLARI</h3>
         <div class="space-y-3 text-xs">
           ${[
-            { label: 'Altın / Değerli Metal', value: classification.altinProb, colorClass: 'bg-amber-500', textClass: 'text-amber-400' },
-            { label: 'Bakır / Bronz / İletken', value: classification.bakirProb, colorClass: 'bg-yellow-600', textClass: 'text-yellow-500' },
-            { label: 'Demir / Ferromanyetik', value: classification.demirProb, colorClass: 'bg-red-500', textClass: 'text-red-400' },
-            { label: 'Boşluk / Yapısal Oda', value: classification.boslukProb, colorClass: 'bg-purple-500', textClass: 'text-purple-400' },
-            { label: 'Su Kaynağı / Sıvı Akışı', value: classification.suProb, colorClass: 'bg-blue-500', textClass: 'text-blue-400' }
+            { label: 'Altın / Değerli Metal', value: liveClassification.altinProb, colorClass: 'bg-amber-500', textClass: 'text-amber-400' },
+            { label: 'Bakır / Bronz / İletken', value: liveClassification.bakirProb, colorClass: 'bg-yellow-600', textClass: 'text-yellow-500' },
+            { label: 'Demir / Ferromanyetik', value: liveClassification.demirProb, colorClass: 'bg-red-500', textClass: 'text-red-400' },
+            { label: 'Boşluk / Yapısal Oda', value: liveClassification.boslukProb, colorClass: 'bg-purple-500', textClass: 'text-purple-400' },
+            { label: 'Su Kaynağı / Sıvı Akışı', value: liveClassification.suProb, colorClass: 'bg-blue-500', textClass: 'text-blue-400' }
           ].map(item => `
             <div class="space-y-1">
               <div class="flex justify-between font-bold">
@@ -1022,11 +997,11 @@ Saha Notu: ${fieldNotes || 'Belirtilmedi'}
 
                 <div className="space-y-3.5 pt-1">
                   {[
-                    { label: 'Altın / Değerli Metal', value: classification.altinProb, color: 'bg-amber-500 text-amber-400' },
-                    { label: 'Bakır / Bronz / İletken', value: classification.bakirProb, color: 'bg-yellow-600 text-yellow-500' },
-                    { label: 'Demir / Ferromanyetik', value: classification.demirProb, color: 'bg-red-500 text-red-400' },
-                    { label: 'Boşluk / Yapısal Oda', value: classification.boslukProb, color: 'bg-purple-500 text-purple-400' },
-                    { label: 'Su Kaynağı / Sıvı Akışı', value: classification.suProb, color: 'bg-blue-500 text-blue-400' },
+                    { label: 'Altın / Değerli Metal', value: liveClassification.altinProb, color: 'bg-amber-500 text-amber-400' },
+                    { label: 'Bakır / Bronz / İletken', value: liveClassification.bakirProb, color: 'bg-yellow-600 text-yellow-500' },
+                    { label: 'Demir / Ferromanyetik', value: liveClassification.demirProb, color: 'bg-red-500 text-red-400' },
+                    { label: 'Boşluk / Yapısal Oda', value: liveClassification.boslukProb, color: 'bg-purple-500 text-purple-400' },
+                    { label: 'Su Kaynağı / Sıvı Akışı', value: liveClassification.suProb, color: 'bg-blue-500 text-blue-400' },
                   ].map((item, idx) => (
                     <div key={idx} className="space-y-1">
                       <div className="flex justify-between items-center text-[10px] font-bold">
