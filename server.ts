@@ -21,7 +21,9 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('/*', (req, res) => {
+    // This catch-all route ensures that any request that doesn't match a static file
+    // is served the index.html, which is essential for client-side routing in SPAs.
+    app.use((req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
