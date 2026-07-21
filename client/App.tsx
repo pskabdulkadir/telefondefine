@@ -2201,7 +2201,6 @@ export default function App() {
 
   const [liveSurfaceAnalysis, setLiveSurfaceAnalysis] = useState<SurfaceAnalysis | null>(null);
   const liveFreq = useFrequencyAnalyzer(sensorsActive || activeTab === 'kamera' || scanPhase === 'scanning' || scanPhase === 'calibration' || activeTab === '3d-view' || activeTab === 'x-ray');
-  const liveAnalysis = useSensorFusion(sensorData, liveFreq / 100, liveSurfaceAnalysis);
   const liveAnalysis = useSensorFusion(rawSensorData ? sensorData : undefined, liveFreq / 100, liveSurfaceAnalysis);
 
   // Effect to handle %90+ AI confidence toast in SIMPLE mode
