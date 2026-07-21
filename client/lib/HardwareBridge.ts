@@ -91,11 +91,11 @@ export class HardwareBridge {
    * beslenen event-driven akış.
    */
   private startHardwareFallbackStream() {
-    // SİMÜLASYON TAMAMEN KALDIRILDI.
-    // Bu fonksiyon artık hiçbir şey yapmıyor. Uygulama, `connectSerial()` veya
-    // `connectBluetooth()` ile gerçek bir donanım bağlanana kadar veri akışı başlatmayacak.
+    // Harici donanım beklenmediği için bu fonksiyon artık bir uyarı vermeyecek
+    // ve uygulamanın akışını engellemeyecektir. Cihazın kendi sensörleri
+    // useSensorEngine üzerinden zaten çalışmaktadır.
     this.stopHardwareFallbackStream();
-    console.warn('Donanım bağlı değil. Gerçek donanım bağlantısı bekleniyor...');
+    console.log('Donanım köprüsü yedek modda. Cihaz sensörleri kullanılıyor.');
   }
 
   private startRealSerialStream() {

@@ -22,63 +22,48 @@ export interface PermissionResult {
 }
 
 export const requestSensorPermission = async (): Promise<PermissionResult> => {
-  // Kamera/Mikrofon isteği için timeout
-  const mediaPromise = (async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: { facingMode: 'environment' }
-      });
-      stream.getTracks().forEach(track => track.stop());
-      return true;
-    } catch (e) {
-      console.warn("Kamera/Mikrofon hatası:", e);
-      return false;
-    }
-  })();
+  // Kamera ve Mikrofon izinlerini zaman aşımı olmadan, daha güvenilir bir şekilde isteyelim.
+  let audioGranted = false;
+  let motionGranted = false;
 
-  const mediaWithTimeout = Promise.race([
-    mediaPromise,
-    new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        console.warn("Kamera/Mikrofon isteği timeout (5s)");
-        resolve(false);
-      }, 5000);
-    })
-  ]);
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'environment' } });
+    stream.getTracks().forEach(track => track.stop());
+    audioGranted = true;
+  } catch (e) { 
+    console.warn("Kamera/Mikrofon izni alınamadı:", e); 
+    // Hata durumunda bile devam et, belki sadece biri reddedilmiştir.
+    // Kullanıcıya tekrar sormak için UI'da seçenekler mevcut.
+  }
 
   // Konum isteği
   const locationPromise = new Promise<void>((resolve) => {
-    const timer = setTimeout(() => {
-      console.warn("Konum isteği timeout (2s)");
-      resolve();
-    }, 2000);
     navigator.geolocation.getCurrentPosition(
-      () => { clearTimeout(timer); resolve(); },
-      () => { clearTimeout(timer); resolve(); },
-      { timeout: 2000, enableHighAccuracy: false }
+      () => { resolve(); },
+      () => { resolve(); }, // Hata durumunda bile devam et
+      { timeout: 5000, enableHighAccuracy: true }
     );
   });
 
   // Hareket Sensörleri
-  const motionPromise = (async () => {
+  try {
     if (typeof (DeviceMotionEvent as any) !== 'undefined' && typeof (DeviceMotionEvent as any).requestPermission === 'function') {
       try {
         const response = await (DeviceMotionEvent as any).requestPermission();
-        return response === 'granted';
+        motionGranted = response === 'granted';
       } catch (e) {
         console.warn("Hareket sensörü izni hatası:", e);
-        return true;
+        motionGranted = true; // iOS-dışı tarayıcılarda bu hata olabilir, true varsayalım.
       }
     }
-    return true;
-  })();
+    motionGranted = true; // requestPermission fonksiyonu yoksa, izin verilmiş varsayılır.
+  } catch (e) {
+    console.error("Hareket sensörü izni alınırken kritik hata:", e);
+    motionGranted = false;
+  }
 
   // Tüm istekleri paralel çalıştır
-  const results = await Promise.allSettled([motionPromise, mediaWithTimeout, locationPromise]);
-
-  const motionGranted = results[0].status === 'fulfilled' && results[0].value === true;
-  const audioGranted = results[1].status === 'fulfilled' && results[1].value === true;
+  await locationPromise;
 
   console.log('📊 İzin Sonuçları:', { motionGranted, audioGranted });
 
