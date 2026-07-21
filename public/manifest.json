@@ -1,0 +1,22 @@
+{
+  "name": "MLAS v1.0 | Saha Analiz Sistemi",
+  "short_name": "MLAS v1.0",
+  "description": "Profesyonel Yeraltı Analiz ve Haritalandırma Sistemi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/mlas/192/192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://picsum.photos/seed/mlas/512/512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

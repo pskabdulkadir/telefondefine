@@ -1,0 +1,6 @@
+{
+  "name": "MLAS-V4-ECHELON",
+  "description": "MLAS v4 ECHELON | Saha Analiz ve Çok Katmanlı Tarama İstasyonu",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
